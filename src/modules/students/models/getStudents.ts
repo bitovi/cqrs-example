@@ -1,10 +1,6 @@
+import { number } from "joi";
 import mongoose, { Schema, Document } from "mongoose";
-
-export interface IStudent {
-  userId: string;
-  name: string;
-  email: string;
-}
+import { IStudent } from "../student.types";
 
 interface IGetStudentsDocument extends Document {
   students: Array<IStudent>;
@@ -20,6 +16,7 @@ const GetStudentsSchema = new Schema<IGetStudentsDocument>(
         userId: String,
         name: String,
         email: String,
+        points: number,
       },
     ],
   },

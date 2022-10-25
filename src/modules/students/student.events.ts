@@ -2,6 +2,7 @@ import client from "../../config/redis";
 import { getTodayFromDateTime } from "../app/helper";
 import getStudentModel from "./models/getStudent";
 import getStudentsModel from "./models/getStudents";
+import { IStudent, IStudentCommand, IUpdateStudentDTO } from "./student.types";
 
 enum Commands {
   add = "add",
@@ -20,7 +21,7 @@ class studentEventHandler {
     }
   }
 
-  async processStudent(record: any) {
+  async processStudent(record: IStudentCommand) {
     switch (record.command) {
       case Commands.add:
         await new getStudentModel({
@@ -36,7 +37,7 @@ class studentEventHandler {
     }
   }
 
-  async updateStudent(userId: string, studentData: any) {
+  async updateStudent(userId: string, studentData: IUpdateStudentDTO) {
     await getStudentModel.updateOne(
       {
         userId,
@@ -46,7 +47,7 @@ class studentEventHandler {
     await this.updateDailyRecord(userId);
   }
 
-  async updateStudents(students: any) {
+  async updateStudents(students: Array<IStudent>) {
     const allStudents = await getStudentsModel.findOne({});
     if (allStudents) {
       allStudents.students = students;

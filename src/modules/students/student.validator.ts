@@ -1,6 +1,7 @@
 import Joi from "joi";
+import { AddStudentDTO } from "./student.types";
 
-export const addStudentValidator = (requestData: any): void => {
+export const addStudentValidator = (requestData: AddStudentDTO): void => {
   const schema = Joi.object().keys({
     name: Joi.string().required(),
     email: Joi.string().email().required(),

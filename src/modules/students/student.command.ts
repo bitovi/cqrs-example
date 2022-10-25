@@ -3,6 +3,7 @@ import client from "../../config/redis";
 import { convertObjectToParameters, getTodayFromDateTime } from "../app/helper";
 import eventHandler from "../app/eventHandler";
 import getStudentModel from "./models/getStudent";
+import { AddStudentDTO } from "./student.types";
 
 class StudentCommandHandler {
   private generateUserId() {
@@ -23,35 +24,35 @@ class StudentCommandHandler {
     return isInArray ? true : false;
   }
 
-  async addStudent(payload: any) {
+  async addStudent(payload: AddStudentDTO) {
     const { email, name, gender } = payload;
     // double check from databasequery
     const student = await getStudentModel.findOne({ email }).lean();
     if (student) throw new Error("Email already exists");
     const userId = this.generateUserId();
-    const studentObj = {
+    const studentData = {
       userId,
       email,
       name,
       gender,
       command: "add",
     };
-    const parameters = convertObjectToParameters(studentObj);
+    const parameters = convertObjectToParameters(studentData);
     await client.sendCommand(["XADD", "student_stream", "*", ...parameters]);
     //could have an event listener but to keep things simple.
-    eventHandler.studentHandler(studentObj);
+    eventHandler.studentHandler(studentData);
   }
 
   async removeStudent(userId: string) {
     const student = await getStudentModel.findOne({ userId }).lean();
     if (!student) throw new Error("Invalid userId provided");
-    const studentObj = {
+    const studentData = {
       userId,
       command: "remove",
     };
-    const parameters = convertObjectToParameters(studentObj);
+    const parameters = convertObjectToParameters(studentData);
     await client.sendCommand(["XADD", "student_stream", "*", ...parameters]);
-    eventHandler.studentHandler(studentObj);
+    eventHandler.studentHandler(studentData);
   }
 
   async takeAttendance(userId: string) {
@@ -60,13 +61,13 @@ class StudentCommandHandler {
     const arrivalTime = new Date().toString();
     const attendanceTaken = await this.isIdRecorded(userId);
     if (attendanceTaken) throw new Error("Already signed in for the day");
-    const attendanceObj = {
+    const attendanceData = {
       userId,
       arrivalTime,
     };
-    const parameters = convertObjectToParameters(attendanceObj);
+    const parameters = convertObjectToParameters(attendanceData);
     await client.sendCommand(["XADD", "attendance_stream", "*", ...parameters]);
-    eventHandler.attendanceHandler(attendanceObj);
+    eventHandler.attendanceHandler(attendanceData);
   }
 }
 

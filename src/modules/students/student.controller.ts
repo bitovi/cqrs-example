@@ -3,6 +3,7 @@ import getStudentsModel from "./models/getStudents";
 import getStudentModel from "./models/getStudent";
 import studentCommandHandler from "./student.command";
 import { addStudentValidator } from "./student.validator";
+import { AddStudentDTO } from "./student.types";
 
 class StudentsController {
   /*
@@ -21,7 +22,7 @@ class StudentsController {
    */
   async addStudent(req: Request, res: Response) {
     try {
-      const payload = req.body;
+      const payload: AddStudentDTO = req.body;
       addStudentValidator(payload);
       await studentCommandHandler.addStudent(payload);
       res.json({

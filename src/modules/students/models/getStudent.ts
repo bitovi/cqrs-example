@@ -1,11 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { IAttendance } from "../student.types";
 
-export interface IAttendance {
-  arrivalTime: string;
-  pointsGotten: number;
-}
-
-interface IStudentDocument extends Document {
+export interface IStudentDocument extends Document {
   userId: string;
   name: string;
   email: string;

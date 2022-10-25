@@ -1,6 +1,8 @@
 import client from "../../config/redis";
 import studentEventHandler from "../students/student.events";
+import { IAttendance, IAttendanceCommand, IStudent, IStudentCommand, IUpdateStudentDTO } from "../students/student.types";
 import { convertArrayParametersToObject } from "./helper";
+
 
 enum Commands {
   add = "add",
@@ -27,7 +29,7 @@ class EventHandler {
       : 0;
   }
 
-  async computeStudentRecord() {
+  async computeStudentRecord(): Promise<Array<IStudent>> {
     //XREAD records
     const events: any = await client.sendCommand([
       "XREAD",
@@ -37,7 +39,7 @@ class EventHandler {
     ]);
     if (!events) return [];
     const [_, records] = events[0];
-    let students: Array<any> = [];
+    let students: Array<IStudent> = [];
     for (const record of records) {
       let [__, userData] = record;
       userData = convertArrayParametersToObject(userData);
@@ -47,7 +49,7 @@ class EventHandler {
             userId: userData.userId,
             name: userData.name,
             email: userData.email,
-            points: 0,
+            gender: userData.gender,
           });
           break;
         case Commands.remove:
@@ -60,10 +62,10 @@ class EventHandler {
     return students;
   }
 
-  async computeAttendanceHandler(userId: string) {
+  async computeAttendanceHandler(userId: string): Promise<{shouldUpdate: boolean, data: IUpdateStudentDTO}> {
     let points: number = 0;
     let daysLate: number = 0;
-    const attendanceRecord: any = [];
+    const attendanceRecord: Array<IAttendance> = [];
     let daysEarly: number = 0;
     let shouldUpdate: boolean = false;
     //XACK ALL Attendance
@@ -92,19 +94,19 @@ class EventHandler {
       }
     }
     return {
-      points,
-      daysEarly,
-      daysLate,
-      attendanceRecord,
-      shouldUpdate,
+      data: {
+        points,
+        daysEarly,
+        daysLate,
+        attendanceRecord,
+      },
+      shouldUpdate
     };
   }
 
-  async studentHandler(record: any, addNew: boolean = true) {
+  async studentHandler(record: IStudentCommand) {
     try {
-      if (addNew) {
-        await studentEvent.processStudent(record);
-      }
+      await studentEvent.processStudent(record);
       const students = await this.computeStudentRecord();
       await studentEvent.updateStudents(students);
     } catch (error) {
@@ -112,10 +114,15 @@ class EventHandler {
     }
   }
 
-  async attendanceHandler(record: any) {
+  async attendanceHandler(record: IAttendanceCommand) {
     try {
-      const student = await this.computeAttendanceHandler(record.userId);
-      await studentEvent.updateStudent(record.userId, student);
+      const {
+        data: student,
+        shouldUpdate,
+      } = await this.computeAttendanceHandler(record.userId);
+      if(shouldUpdate) {
+        await studentEvent.updateStudent(record.userId, student);
+      }
     } catch (error) {
       console.log(error);
     }
